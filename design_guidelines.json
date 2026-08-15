@@ -1,0 +1,83 @@
+{
+  "project_name": "Sanskritika Mirza (Academy of Indian / Western Classical & Contemporary Music)",
+  "app_type": "hybrid_fullstack",
+  "theme": "light-warm-editorial",
+  "typography": {
+    "heading_font": "Playfair Display",
+    "body_font": "Plus Jakarta Sans",
+    "mono_font": "JetBrains Mono",
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight font-serif",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-serif",
+      "h3": "text-xl sm:text-2xl font-serif",
+      "h4": "text-lg sm:text-xl font-medium",
+      "body": "text-base leading-relaxed font-sans",
+      "small": "text-sm text-muted-foreground font-sans"
+    }
+  },
+  "colors": {
+    "archetype": "ORGANIC & EARTHY (Trust, Growth, Calm) with Luxury Indian Classical twist",
+    "primary": "#8B4513",
+    "primary_foreground": "#FFFFFF",
+    "background": "#FAF7F2",
+    "card": "#FFFFFF",
+    "border": "#E6DFD5",
+    "muted": "#F0EAE1",
+    "accent": "#C28E38",
+    "text_primary": "#2C221E",
+    "text_secondary": "#6B5B53"
+  },
+  "visual_enhancers": {
+    "borderRadius": "0.75rem",
+    "shadows": "0 10px 30px -10px rgba(139, 69, 19, 0.08)",
+    "glassmorphism": "backdrop-blur-xl bg-white/80 border border-[#E6DFD5]"
+  },
+  "component_name": "MusicSchoolManagementApp",
+  "grids": {
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-4 gap-6",
+    "tetris_grid": "grid grid-cols-1 md:grid-cols-12 gap-8"
+  },
+  "layouts": {
+    "max_width": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "spacing": "py-12 space-y-8"
+  },
+  "motion": {
+    "transition": "transition-all duration-300 ease-in-out",
+    "hover_lift": "hover:-translate-y-1 hover:shadow-xl"
+  },
+  "accessibility": {
+    "contrast": "APCA and WCAG AA compliant with dark earthy text on warm sand backgrounds",
+    "focus_states": "focus:ring-2 focus:ring-[#8B4513] focus:outline-none",
+    "data_testid": "MANDATORY for all interactive elements and buttons"
+  },
+  "media": {
+    "hero_image": "https://images.unsplash.com/photo-1519682718457-c82ce8296645?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "instrument_image": "https://images.unsplash.com/photo-1764509194716-5f51f3f7ac2a?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "vintage_radio": "https://images.unsplash.com/photo-1753378000410-df37839e593b?crop=entropy&cs=srgb&fm=jpg&q=85"
+  },
+  "image_urls": [
+    {
+      "category": "hero_concert",
+      "image_url": "https://images.unsplash.com/photo-1519682718457-c82ce8296645?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Concert hall stage with warm lighting for academy hero"
+    },
+    {
+      "category": "sheet_music",
+      "image_url": "https://images.unsplash.com/photo-1764509194716-5f51f3f7ac2a?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "description": "Sheet music and piano keys for classical curriculum"
+    }
+  ],
+  "instructions_to_main_agent": [
+    "Build a gorgeous, responsive Music School Management Web Application for Sanskritika Mirza Academy.",
+    "Implement staff login with sample credentials (staff / music2026).",
+    "Build 6 core modules: Dashboard & Analytics, Student Directory & Registration, Attendance Management, Fee & Dues Management (with second-Sunday due date & payment recording), Printable Receipt, and WhatsApp/SMS reminder link generator.",
+    "Seed 8 realistic sample student records on backend startup.",
+    "Ensure all buttons, inputs, table rows, and modals have data-testid attributes for testing.",
+    "Use warm editorial typography (Playfair Display + Plus Jakarta Sans) and organic earthy palette (#FAF7F2 background, #8B4513 primary)."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Never use generic centered layouts without purpose. Create asymmetric balance and generous spacing.",
+    "Always use data-testid on interactive elements.",
+    "Ensure high contrast and accessible text colors."
+  ]
+}
