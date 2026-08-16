@@ -324,7 +324,12 @@ function Students() {
 function StudentProfile() {
   const { id } = useParams();
   const [data, setData] = useState(null);
-  useEffect(() => { client.get(`/admin/students/${id}`).then((r) => setData(r.data)); }, [id]);
+  const [batches, setBatches] = useState([]);
+  const [moving, setMoving] = useState(false);
+  useEffect(() => {
+    client.get(`/admin/students/${id}`).then((r) => setData(r.data));
+    client.get("/admin/batches").then((r) => setBatches(r.data));
+  }, [id]);
   if (!data) return <Loading />;
   const s = data.student;
   const renew = async () => {
@@ -334,10 +339,11 @@ function StudentProfile() {
       toast.success("Enrollment marked as renewal");
     } catch (err) { toast.error(formatError(err)); }
   };
+  const reload = () => client.get(`/admin/students/${id}`).then((r) => setData(r.data));
   return (
     <>
       <NavLink className="back-link" to="/admin/students" data-testid="profile-back-link">← All students</NavLink>
-      <Header eyebrow="STUDENT PROFILE" title={s.student_name} description={`${(s.subjects || []).join(" · ")} · ${s.sunday_batch_slot}`} action={<button className="secondary-btn" onClick={renew} data-testid="profile-renew-button">Mark renewal</button>} />
+      <Header eyebrow="STUDENT PROFILE" title={s.student_name} description={`${(s.subjects || []).join(" · ")} · ${s.sunday_batch_slot}`} action={<div className="head-actions"><button className="secondary-btn" onClick={() => setMoving(true)} data-testid="profile-move-batch-button">Move batch</button><button className="secondary-btn" onClick={renew} data-testid="profile-renew-button">Mark renewal</button></div>} />
       <div className="profile-grid">
         <section className="panel profile-about">
           <div className="large-avatar">{s.student_name.split(" ").map((x) => x[0]).join("").slice(0, 2)}</div>
@@ -369,7 +375,40 @@ function StudentProfile() {
           {!data.fees.length && <div className="empty">No fee records yet.</div>}
         </section>
       </div>
+      {moving && <MoveBatchModal student={s} batches={batches} onClose={() => setMoving(false)} onSaved={() => { setMoving(false); reload(); }} />}
     </>
+  );
+}
+
+function MoveBatchModal({ student, batches, onClose, onSaved }) {
+  const [batchId, setBatchId] = useState(student.batch_id || "");
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!batchId || batchId === student.batch_id) return toast.error("Choose a different batch");
+    setBusy(true);
+    try {
+      await client.patch(`/admin/students/${student.id}`, { batch_id: batchId });
+      toast.success("Student moved to new batch");
+      onSaved();
+    } catch (err) { toast.error(formatError(err)); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="modal-backdrop">
+      <div className="modal small-modal">
+        <button className="modal-close" onClick={onClose} data-testid="close-move-batch"><X /></button>
+        <div className="eyebrow">MOVE BATCH</div>
+        <h2>Reassign {student.student_name}.</h2>
+        <p className="muted">Attendance and fee records stay intact — only the batch and Sunday slot change.</p>
+        <form onSubmit={submit}>
+          <label>New batch<select data-testid="move-batch-select" value={batchId} onChange={(e) => setBatchId(e.target.value)} required>
+            {batches.map((b) => <option key={b.id} value={b.id} disabled={b.id === student.batch_id}>{b.name} · {b.slot}{b.id === student.batch_id ? " (current)" : ""}</option>)}
+          </select></label>
+          <button className="primary-btn full" type="submit" disabled={busy || batchId === student.batch_id} data-testid="move-batch-submit">{busy ? "Moving…" : "Confirm move"}</button>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -445,6 +484,7 @@ function Batches() {
   const [batches, setBatches] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [show, setShow] = useState(false);
+  const [editing, setEditing] = useState(null);
   const load = () => Promise.all([client.get("/admin/batches"), client.get("/admin/teachers")]).then(([b, t]) => { setBatches(b.data); setTeachers(t.data.filter((x) => x.status === "ACTIVE")); });
   useEffect(() => { load(); }, []);
   return (
@@ -457,12 +497,46 @@ function Batches() {
             <div><span className="eyebrow">DAY / TIME</span><b>{b.day_of_week} · {b.slot}</b></div>
             <div><span className="eyebrow">TEACHER</span><b>{b.teacher_name}</b></div>
             <div><span className="eyebrow">ENROLLED</span><b>{b.enrolled_count} / {b.capacity}</b></div>
+            <button className="secondary-btn" onClick={() => setEditing(b)} data-testid={`edit-batch-${b.id}`}>Edit</button>
           </div>
         ))}
         {!batches.length && <div className="empty">Add teachers first, then create batches.</div>}
       </section>
       {show && <AddBatchModal teachers={teachers} onClose={() => setShow(false)} onSaved={() => { setShow(false); load(); }} />}
+      {editing && <EditBatchModal batch={editing} teachers={teachers} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />}
     </>
+  );
+}
+
+function EditBatchModal({ batch, teachers, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: batch.name, instrument: batch.instrument, slot: batch.slot, teacher_id: batch.teacher_id, capacity: batch.capacity, day_of_week: batch.day_of_week });
+  const [busy, setBusy] = useState(false);
+  const update = (k, v) => setForm({ ...form, [k]: v });
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    try { await client.patch(`/admin/batches/${batch.id}`, { ...form, capacity: Number(form.capacity) }); toast.success("Batch updated"); onSaved(); }
+    catch (err) { toast.error(formatError(err)); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="modal-backdrop">
+      <div className="modal">
+        <button className="modal-close" onClick={onClose} data-testid="close-edit-batch"><X /></button>
+        <div className="eyebrow">EDIT BATCH</div>
+        <h2>Refine this studio slot.</h2>
+        <p className="muted">{batch.enrolled_count} student{batch.enrolled_count === 1 ? "" : "s"} currently enrolled — changing the slot updates their timing.</p>
+        <form className="form-grid" onSubmit={submit}>
+          <label>Batch name<input data-testid="edit-batch-name" value={form.name} onChange={(e) => update("name", e.target.value)} required /></label>
+          <label>Instrument<select data-testid="edit-batch-instrument" value={form.instrument} onChange={(e) => update("instrument", e.target.value)}>{INSTRUMENTS.map((x) => <option key={x}>{x}</option>)}</select></label>
+          <label>Day<select data-testid="edit-batch-day" value={form.day_of_week} onChange={(e) => update("day_of_week", e.target.value)}>{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((x) => <option key={x}>{x}</option>)}</select></label>
+          <label>Slot<select data-testid="edit-batch-slot" value={form.slot} onChange={(e) => update("slot", e.target.value)}>{SUNDAY_SLOTS.map((x) => <option key={x}>{x}</option>)}</select></label>
+          <label>Teacher<select data-testid="edit-batch-teacher" value={form.teacher_id} onChange={(e) => update("teacher_id", e.target.value)} required>{teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+          <label>Capacity<input data-testid="edit-batch-capacity" type="number" value={form.capacity} onChange={(e) => update("capacity", e.target.value)} /></label>
+          <button className="primary-btn wide" type="submit" disabled={busy} data-testid="edit-batch-submit">{busy ? "Saving…" : "Save changes"} <ArrowUpRight size={16} /></button>
+        </form>
+      </div>
+    </div>
   );
 }
 

@@ -91,6 +91,14 @@ class BatchInput(BaseModel):
     capacity: int = 12
     day_of_week: str = "Sunday"
 
+class BatchUpdateInput(BaseModel):
+    name: Optional[str] = None
+    instrument: Optional[str] = None
+    slot: Optional[str] = None
+    teacher_id: Optional[str] = None
+    capacity: Optional[int] = None
+    day_of_week: Optional[str] = None
+
 class AttendanceInput(BaseModel):
     student_id: str
     batch_id: str = ""
@@ -329,6 +337,21 @@ async def admin_create_batch(data: BatchInput, user=Depends(require("admin"))):
     doc["id"] = f"batch-{uuid.uuid4().hex[:6]}"
     await db.batches.insert_one(doc)
     return await db.batches.find_one({"id": doc["id"]}, {"_id": 0})
+
+@api.patch("/admin/batches/{bid}")
+async def admin_update_batch(bid: str, data: BatchUpdateInput, user=Depends(require("admin"))):
+    updates = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v is not None}
+    if not updates: raise HTTPException(400, "Nothing to update")
+    if "teacher_id" in updates:
+        if not await db.teachers.find_one({"id": updates["teacher_id"]}, {"_id": 0}):
+            raise HTTPException(400, "Invalid teacher")
+    result = await db.batches.update_one({"id": bid}, {"$set": updates})
+    if not result.matched_count: raise HTTPException(404, "Batch not found")
+    batch = await db.batches.find_one({"id": bid}, {"_id": 0})
+    # Keep enrolled students' sunday_batch_slot mirrored with the batch slot
+    if "slot" in updates:
+        await db.students.update_many({"batch_id": bid}, {"$set": {"sunday_batch_slot": batch["slot"]}})
+    return batch
 
 # ===== Admin: attendance =====
 @api.get("/admin/attendance")
