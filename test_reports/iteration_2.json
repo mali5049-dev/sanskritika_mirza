@@ -1,0 +1,37 @@
+{
+  "summary": "Full re-verification of the expanded 3-role Sanskritika Mirza Academy app. Backend regression (24 tests) covers auth/RBAC, public applications track+submit, admin approve/reject with student login using temp password, teacher/batch/attendance/fees CRUD, second-Sunday due-date logic, wa.me link surface, teacher scoping (403 on other teacher's batch), student /me. All 24 backend tests PASS. UI end-to-end via Playwright covers landing CTAs, /apply happy path (tracking ID surfaced), /track pending & rejected (with reason), admin login + session persistence after reload, applications page, attendance mark, batches, teachers, fees generate + collect + receipt modal, wa.me reminder href, teacher login (only guitar batches visible, mark-all-present), student login (roll SM2026001, teacher Rohan Verma, change-password modal opens). All UI flows PASS.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_academy.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py is a single 530-line module mixing models, seed, and all route groups; splitting into routers/models/seed submodules will improve maintainability once the app grows further.",
+    "login cookie now uses samesite=none + secure=True (fine for HTTPS preview), but the same setting will break local http testing; consider selecting samesite/secure based on env.",
+    "Approve endpoint stores the temp password in the returned payload; it is only returned once at approval time (acceptable) but should not be logged anywhere - verify logging middleware does not persist request/response bodies.",
+    "admin_dashboard eagerly returns the full students list inside the dashboard payload; consider paginating once academy grows beyond a few hundred students.",
+    "In seed() the guitar teacher id is derived as 'teacher-' + uid[-2:] ('teacher-t1'/'teacher-t2') which relies on hard-coded uid suffixes; safer to use uuid or a stable slug.",
+    "Frontend fees/export CSV builds client-side and triggers a blob download - no server-side truth; fine for MVP but note the note-of-truth divergence."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_academy.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/iteration_2.json"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "100% of executed UI checks (15/15)"},
+  "test_credentials": "Loaded from /app/memory/test_credentials.md (admin staff@sanskritika.in/music2026, teachers/students as listed).",
+  "seed_data_creation": "Tests added transient TEST_ prefixed applicants + one approved TEST_ student (with random roll number) + toggled a TEST_ teacher inactive + created a TEST_ batch. Also mutated some attendance rows and made a small ₹500 payment on one seeded fee.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend suite lives at /app/backend/tests/test_academy.py and runs via pytest with xdist scope; older test_core.py is stale and refers to /api/dashboard which no longer exists (dashboard moved under /api/admin/dashboard) - keep test_academy.py as the source of truth. Auth cookie is samesite=none, secure=True. Public URL: REACT_APP_BACKEND_URL. Seed version is 4; if any seed change is made, bump SEED_VERSION to reset collections on restart.",
+  "rca of the issue": "No issues found in this iteration; the receipt modal, export ledger, and renewal controls flagged in iteration_1 are now wired (payment-submit-button opens a receipt modal with print/download actions, fees-export-button downloads a CSV, profile-renew-button calls /api/admin/students/{sid}/renew)."
+}

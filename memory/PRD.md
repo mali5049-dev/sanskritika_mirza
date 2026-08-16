@@ -1,40 +1,48 @@
 # Sanskritika Mirza Academy Management — PRD
 
 ## Original problem statement
-Build a modern, clean, responsive Music School Management Web Application for Sanskritika Mirza Academy of Indian / Western Classical & Contemporary Music, covering staff access, student records, attendance, analytics, fees, payments, receipts, and reminders.
+Full-stack music school management platform for Sanskritika Mirza Academy with public applicant flow, admin approval/onboarding, teacher management and attendance portal, student portal (self-view of profile/fees/attendance), fee ledger with second-Sunday due-date logic, offline payment recording, and WhatsApp reminder links. Original stack (Next.js/Prisma) approved to be replaced with the workspace's React + FastAPI + MongoDB stack.
 
 ## Architecture decisions
-- React 19 frontend with React Router, Lucide icons, Recharts-ready workspace components, and responsive CSS.
-- FastAPI backend on port 8001 with MongoDB through the existing MONGO_URL and DB_NAME environment variables.
-- JWT staff session in an HTTP-only secure cookie, bcrypt password hashing, failed-login lockout, and seeded staff account.
-- Payments are recorded internally; no online gateway is connected.
+- React 19 (CRACO) + React Router 7 + Sonner toasts + Lucide icons + Google Fonts (Playfair Display / DM Sans).
+- FastAPI on port 8001, single-cookie JWT (8 hr), bcrypt hashed passwords, brute-force lockout, MongoDB via Motor.
+- Three roles enforced server-side: `admin`, `teacher`, `student`. Frontend routes are guarded but source of truth is backend RBAC.
+- Public routes: `/`, `/apply`, `/track`. Portal routes: `/admin/*`, `/teacher/*`, `/student/*`.
+- Payments recorded offline only (Cash/UPI/Card/Bank Transfer). WhatsApp reminders via `wa.me` link generator.
+- Seed reset via `SEED_VERSION` marker so schema changes safely refresh demo data.
 
 ## User personas
-- Academy owner/teacher: needs a calm overview of attendance, student growth, and money due.
-- Academy staff: needs fast, low-friction daily attendance, registration, fee collection, and reminders.
+- **Admin**: reviews applications, onboards students (roll + batch + fee + temp password), manages teachers and batches, marks attendance, collects fees.
+- **Teacher**: views only their assigned batches, roster, marks attendance for their sessions.
+- **Student**: views own profile, batch/teacher, attendance history, fee ledger; can change password.
+- **Public applicant**: submits form, receives tracking ID, tracks admission status.
 
 ## Core requirements (static)
-- Staff login and protected academy workspace
-- Dashboard with active student, attendance, outstanding fee, and collection metrics
-- Student directory, search, Sunday batch filter, registration, profile, ledger, and renewal action
-- Daily attendance by date/batch with present/absent actions
-- Monthly dues with second-Sunday due date, status filters, payment recording, receipts, export, and WhatsApp reminder links
-- Responsive layouts and descriptive data-testid attributes for user-facing flows
+- Public application submission with tracking ID + status lookup.
+- Admin console: dashboard analytics, application approve/reject workflow, student directory + profile + renewal, teacher CRUD + activation, batch CRUD, attendance sheet, fee ledger (generate monthly / collect / receipt / export / reminder).
+- Teacher portal: assigned batches, per-batch roster, attendance marking by date.
+- Student portal: personal dashboard, teacher/batch info, fee ledger, attendance history, forced/optional password change.
+- Second-Sunday monthly due-date; PAID/PARTIAL/DUE/OVERDUE statuses.
+- All interactive elements have `data-testid`.
 
-## Implemented (2026-08-15)
-- Replaced starter screen with full warm editorial academy workspace and mobile navigation.
-- Added staff login for staff@sanskritika.in and seeded 8 students, attendance rows, and current-month fees.
-- Added dashboard, student registration/directory/profile, attendance, fees, payment collection, print/download receipt, ledger CSV export, renewal action, and WhatsApp reminders.
-- Added MongoDB-backed auth, APIs, due-date engine, secure cookie, and five-failure lockout.
-- Verified API login/me/students/fees and browser login, dashboard, registration modal, fee receipt, and profile flows.
+## Implemented (2026-02)
+- Backend rewritten with full RBAC: users/applications/teachers/batches/students/attendance/fees + role guards + fresh seed (admin + 2 teachers + 4 batches + 8 approved students + 2 pending + 1 rejected app).
+- Public landing / apply / track pages with tracking ID display.
+- Login page routes to correct portal by role. Cookie session survives reloads.
+- Admin console covers all six modules with modals for approve/reject/add teacher/add batch/collect fee/receipt.
+- Teacher portal shows only assigned batches, with per-batch attendance marking.
+- Student portal shows profile, assigned teacher, ledger, attendance, and password change (auto-open on first login).
+- CSV export of fee ledger, print/download receipt, wa.me link generator populated with guardian phone.
 
 ## Prioritized backlog
-- P0: Add actual photo upload/storage and student photo cropping.
-- P1: Add CSV/PDF attendance report generation and date-range filters.
-- P1: Add editable student records and batch capacity management.
-- P2: Add richer monthly analytics and automated WhatsApp/SMS provider integration.
+- P1: CSV/PDF attendance reports and date-range filters.
+- P1: Batch edit/deactivate + student batch reassignment UI (backend already supports).
+- P1: Photo upload/storage for students (via object storage integration).
+- P2: Real WhatsApp/SMS integration (Twilio) once the user chooses a provider.
+- P2: Configurable fee structures per instrument or plan.
+- P2: Multi-month automatic fee generation cron.
 
-## P0/P1/P2 remaining tasks
-- P0 remaining: none for the current working demo scope.
-- P1: attendance CSV/PDF export, edit student form, and richer fee receipt branding.
-- P2: photo storage, automated reminders, and multi-staff roles/permissions.
+## P0/P1/P2 remaining
+- P0 remaining: none for the requested scope; awaiting test agent verification.
+- P1: attendance exports, teacher edit UI, photo upload.
+- P2: SMS reminders, richer analytics, automated fee cron.
